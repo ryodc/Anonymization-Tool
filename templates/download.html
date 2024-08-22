@@ -1,0 +1,34 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Download Pseudonymized File</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Download Your Files</h1>
+        <p>Your file has been successfully pseudonymized. You can download it below:</p>
+        <a href="/download/{{ filename }}" class="btn btn-success">Download Pseudonymized File</a>
+        <a href="/download_log/{{ log_filename }}" class="btn btn-info">Download Log File</a>
+        <a href="/" class="btn btn-primary mt-3">Back to Upload</a>
+    </div>
+</body>
+</html> -->
+
+{% extends "base.html" %}
+
+{% block title %}Download - Pseudonymization App{% endblock %}
+
+{% block content %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Download Your Files</h3>
+    </div>
+    <div class="card-body text-center">
+        <p>Your file has been successfully anonymized. You can download it below:</p>
+        <a href="/download/{{ filename }}" class="btn btn-success btn-lg mb-2">Download File</a>
+        <a href="/download_log/{{ log_filename }}" class="btn btn-info btn-lg mb-2">Download Log File</a>
+        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

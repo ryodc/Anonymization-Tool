@@ -1,0 +1,417 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns for Pseudonymization</title>
+</head>
+<body>
+    <h1>Select Columns to Pseudonymize</h1>
+    <form method="POST" action="/pseudonymize">
+        {% for column in columns %}
+            <input type="checkbox" name="columns" value="{{ column }}">{{ column }}<br>
+        {% endfor %}
+        <input type="hidden" name="filename" value="{{ filename }}">
+        <button type="submit">Pseudonymize</button>
+    </form>
+</body>
+</html> -->
+
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns for Pseudonymization</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Select Columns to Pseudonymize</h1>
+        <form method="POST" action="/pseudonymize">
+            <div class="form-group">
+                {% for column in columns %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="columns" value="{{ column }}">
+                        <label class="form-check-label">{{ column }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="method">Choose Pseudonymization Method:</label>
+                <select class="form-control" name="method" id="method" required>
+                    <option value="sha256">SHA-256</option>
+                    <option value="md5">MD5</option>
+                    <option value="random_string">Random String</option>
+                </select>
+            </div>
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-primary">Pseudonymize</button>
+        </form>
+        <h2 class="mt-4">Data Preview</h2>
+        {{ preview|safe }}
+    </div>
+</body>
+</html> -->
+
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns for Pseudonymization</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Select Columns to Pseudonymize or Swap</h1>
+        <form method="POST" action="/pseudonymize">
+            {% for sheet_name, columns in sheets_info.items() %}
+                <h2>{{ sheet_name }}</h2>
+                <div class="form-group">
+                    {% for column in columns %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="columns_{{ sheet_name }}" value="{{ column }}">
+                            <label class="form-check-label">{{ column }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <div class="form-group">
+                <label for="method">Choose Pseudonymization Method:</label>
+                <select class="form-control" name="method" id="method" required>
+                    <option value="sha256">SHA-256</option>
+                    <option value="md5">MD5</option>
+                    <option value="random_string">Random String</option>
+                    <option value="swap">Swap Values</option>
+                </select>
+            </div>
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-primary">Pseudonymize/Swap</button>
+        </form>
+    </div>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns for Pseudonymization or Swap</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Select Columns and Methods</h1>
+        <form method="POST" action="/pseudonymize">
+            {% for sheet_name, columns in sheets_info.items() %}
+                <h2>{{ sheet_name }}</h2>
+                <div class="form-group">
+                    {% for column in columns %}
+                        <div class="form-group">
+                            <label>{{ column }}</label>
+                            <select class="form-control" name="method_{{ sheet_name }}_{{ column }}" required>
+                                <option value="none">None</option>
+                                <option value="sha256">SHA-256</option>
+                                <option value="md5">MD5</option>
+                                <option value="random_string">Random String</option>
+                                <option value="swap">Swap Values</option>
+                            </select>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-primary">Apply Methods</button>
+        </form>
+    </div>
+</body>
+</html> -->
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Columns for Pseudonymization or Swap</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .sheet-container {
+            margin-bottom: 20px;
+        }
+        .sheet-header {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .sheet-body {
+            display: none;
+            padding: 10px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+        }
+        .sticky-buttons {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select Columns and Methods</h1>
+        <form method="POST" action="/pseudonymize">
+            <div class="sticky-buttons">
+                <button type="button" class="btn btn-info" onclick="toggleAllSheets()">Toggle All Sheets</button>
+                <button type="button" class="btn btn-primary" onclick="applyBatchMethod()">Apply Method to Selected</button>
+            </div>
+            {% for sheet_name, columns in sheets_info.items() %}
+                <div class="sheet-container">
+                    <div class="sheet-header" onclick="toggleSheetBody('{{ sheet_name }}')">
+                        <h2>{{ sheet_name }} (Click to expand/collapse)</h2>
+                    </div>
+                    <div class="sheet-body" id="sheet-body-{{ sheet_name }}">
+                        <div class="form-group">
+                            <label>Select method for multiple columns:</label>
+                            <select class="form-control" id="batch-method-{{ sheet_name }}">
+                                <option value="none">None</option>
+                                <option value="sha256">SHA-256</option>
+                                <option value="md5">MD5</option>
+                                <option value="random_string">Random String</option>
+                                <option value="swap">Swap Values</option>
+                            </select>
+                        </div>
+                        {% for column in columns %}
+                            <div class="form-group">
+                                <label>{{ column }}</label>
+                                <select class="form-control method-select" name="method_{{ sheet_name }}_{{ column }}" required>
+                                    <option value="none">None</option>
+                                    <option value="sha256">SHA-256</option>
+                                    <option value="md5">MD5</option>
+                                    <option value="random_string">Random String</option>
+                                    <option value="swap">Swap Values</option>
+                                </select>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-success">Apply Methods</button>
+        </form>
+    </div>
+
+    <script>
+        function toggleSheetBody(sheetName) {
+            var sheetBody = document.getElementById('sheet-body-' + sheetName);
+            if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+                sheetBody.style.display = 'block';
+            } else {
+                sheetBody.style.display = 'none';
+            }
+        }
+
+        function toggleAllSheets() {
+            var sheetBodies = document.querySelectorAll('.sheet-body');
+            sheetBodies.forEach(function(sheetBody) {
+                if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+                    sheetBody.style.display = 'block';
+                } else {
+                    sheetBody.style.display = 'none';
+                }
+            });
+        }
+
+        function applyBatchMethod() {
+            {% for sheet_name, columns in sheets_info.items() %}
+                var selectedMethod = document.getElementById('batch-method-{{ sheet_name }}').value;
+                var selects = document.querySelectorAll('#sheet-body-{{ sheet_name }} .method-select');
+                selects.forEach(function(select) {
+                    select.value = selectedMethod;
+                });
+            {% endfor %}
+        }
+    </script>
+</body>
+</html> -->
+
+
+
+
+
+{% extends "base.html" %}
+
+{% block title %}Select Columns - Pseudonymization App{% endblock %}
+
+{% block content %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Select Columns and Methods</h3>
+    </div>
+    <div class="card-body">
+        <!-- Add the Go Back button -->
+        <a href="{{ url_for('upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload a Different File</a>
+        
+        <form method="POST" action="/pseudonymize">
+            <div class="sticky-buttons mb-3">
+                <button type="button" class="btn btn-info" onclick="toggleAllSheets()">Toggle All Sheets</button>
+                <button type="button" class="btn btn-primary" onclick="applyBatchMethod()">Apply Method to Selected</button>
+            </div>
+            {% for sheet_name, columns in sheets_info.items() %}
+                <div class="sheet-container">
+                    <!-- Improved Expand/Collapse Button -->
+                    <div class="sheet-header">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="toggleSheetBody('{{ sheet_name }}')">
+                            {{ sheet_name }} <small>(Click to expand/collapse)</small>
+                        </button>
+                    </div>
+                    <div class="sheet-body" id="sheet-body-{{ sheet_name }}" style="display:none;">
+                        <div class="form-group">
+                            <label>Select method for multiple columns:</label>
+                            <select class="form-control" id="batch-method-{{ sheet_name }}">
+                                <option value="none">None</option>
+                                <option value="sha256">Pseudonymization</option>
+                                <!-- <option value="md5">MD5</option> -->
+                                <!-- <option value="random_string">Random String</option> -->
+                                <option value="swap">Swapping</option>
+                            </select>
+                        </div>
+                        {% for column in columns %}
+                            <div class="form-group">
+                                <label>{{ column }}</label>
+                                <select class="form-control method-select" name="method_{{ sheet_name }}_{{ column }}" required>
+                                    <option value="none">None</option>
+                                    <option value="sha256">Pseudonymization</option>
+                                    <!-- <option value="md5">MD5</option> -->
+                                    <!-- <option value="random_string">Random String</option> -->
+                                    <option value="swap">Swapping</option>
+                                </select>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-success mt-3">Apply Methods</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleSheetBody(sheetName) {
+        var sheetBody = document.getElementById('sheet-body-' + sheetName);
+        if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+            sheetBody.style.display = 'block';
+        } else {
+            sheetBody.style.display = 'none';
+        }
+    }
+
+    function toggleAllSheets() {
+        var sheetBodies = document.querySelectorAll('.sheet-body');
+        sheetBodies.forEach(function(sheetBody) {
+            if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+                sheetBody.style.display = 'block';
+            } else {
+                sheetBody.style.display = 'none';
+            }
+        });
+    }
+
+    function applyBatchMethod() {
+        {% for sheet_name, columns in sheets_info.items() %}
+            var selectedMethod = document.getElementById('batch-method-{{ sheet_name }}').value;
+            var selects = document.querySelectorAll('#sheet-body-{{ sheet_name }} .method-select');
+            selects.forEach(function(select) {
+                select.value = selectedMethod;
+            });
+        {% endfor %}
+    }
+</script>
+{% endblock %}
+
+
+
+
+
+<!-- 
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Select Columns and Methods</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/pseudonymize">
+            <div class="sticky-buttons mb-3">
+                <button type="button" class="btn btn-info" onclick="toggleAllSheets()">Toggle All Sheets</button>
+                <button type="button" class="btn btn-primary" onclick="applyBatchMethod()">Apply Method to Selected</button>
+            </div>
+            {% for sheet_name, columns in sheets_info.items() %}
+                <div class="sheet-container">
+                    <div class="sheet-header" onclick="toggleSheetBody('{{ sheet_name }}')">
+                        <h5>{{ sheet_name }} <small>(Click to expand/collapse)</small></h5>
+                    </div>
+                    <div class="sheet-body" id="sheet-body-{{ sheet_name }}">
+                        <div class="form-group">
+                            <label>Select method for multiple columns:</label>
+                            <select class="form-control" id="batch-method-{{ sheet_name }}">
+                                <option value="none">None</option>
+                                <option value="sha256">SHA-256</option>
+                                <option value="md5">MD5</option>
+                                <option value="random_string">Random String</option>
+                                <option value="swap">Swap Values</option>
+                            </select>
+                        </div>
+                        {% for column in columns %}
+                            <div class="form-group">
+                                <label>{{ column }}</label>
+                                <select class="form-control method-select" name="method_{{ sheet_name }}_{{ column }}" required>
+                                    <option value="none">None</option>
+                                    <option value="sha256">Pseudonymization</option>
+                                    <option value="md5">MD5</option>
+                                    <option value="random_string">Random String</option>
+                                    <option value="swap">Swap Values</option>
+                                </select>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <button type="submit" class="btn btn-success mt-3">Apply Methods</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleSheetBody(sheetName) {
+        var sheetBody = document.getElementById('sheet-body-' + sheetName);
+        if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+            sheetBody.style.display = 'block';
+        } else {
+            sheetBody.style.display = 'none';
+        }
+    }
+
+    function toggleAllSheets() {
+        var sheetBodies = document.querySelectorAll('.sheet-body');
+        sheetBodies.forEach(function(sheetBody) {
+            if (sheetBody.style.display === 'none' || sheetBody.style.display === '') {
+                sheetBody.style.display = 'block';
+            } else {
+                sheetBody.style.display = 'none';
+            }
+        });
+    }
+
+    function applyBatchMethod() {
+        {% for sheet_name, columns in sheets_info.items() %}
+            var selectedMethod = document.getElementById('batch-method-{{ sheet_name }}').value;
+            var selects = document.querySelectorAll('#sheet-body-{{ sheet_name }} .method-select');
+            selects.forEach(function(select) {
+                select.value = selectedMethod;
+            });
+        {% endfor %}
+    }
+</script> -->
