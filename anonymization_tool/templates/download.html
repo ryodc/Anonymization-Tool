@@ -26,9 +26,10 @@
     </div>
     <div class="card-body text-center">
         <p>Your file has been successfully anonymized. You can download it below:</p>
-        <a href="/download/{{ filename }}" class="btn btn-success btn-lg mb-2">Download File</a>
-        <a href="/download_log/{{ log_filename }}" class="btn btn-info btn-lg mb-2">Download Log File</a>
-        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+        <a href="{{ url_for('main.download_file', filename=filename) }}" class="btn btn-success btn-lg mb-2">Download File</a>
+        <a href="{{ url_for('main.download_log_file', log_filename=log_filename) }}" class="btn btn-info btn-lg mb-2">Download Log File</a>
+        <a href="{{ url_for('main.home') }}" class="btn btn-primary mt-3">Back to Home</a>
     </div>
 </div>
 {% endblock %}
+

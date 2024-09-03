@@ -1,4 +1,4 @@
-# app.py
+# run.py
 from anonymization_tool import create_app
 
 app = create_app()
