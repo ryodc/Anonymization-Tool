@@ -11,15 +11,13 @@
         <!-- Go Back Button -->
         <a href="{{ url_for('main.upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload a Different File</a>
         
-        <form method="POST" action="{{ url_for('main.anonymize') }}">
+        <form id="anonymize-form" method="POST" action="{{ url_for('main.anonymize') }}">
             <div class="form-group">
                 <label>Select method for multiple columns:</label>
                 <select class="form-control" id="batch-method">
                     <option value="none">None</option>
                     <option value="generalize">Generalize</option>
                     <option value="sha256">Pseudonymization</option>
-                    <!-- <option value="md5">MD5</option> -->
-                    <!-- <option value="random_string">Random String</option> -->
                     <option value="swap">Swapping</option>
                 </select>
                 <button type="button" class="btn btn-primary mt-2" onclick="applyBatchMethod()">Apply Method to All</button>
@@ -32,8 +30,6 @@
                         <option value="none">None</option>
                         <option value="generalize">Generalize</option>
                         <option value="sha256">Pseudonymization</option>
-                        <!-- <option value="md5">MD5</option> -->
-                        <!-- <option value="random_string">Random String</option> -->
                         <option value="swap">Swapping</option>
                     </select>
 
@@ -46,8 +42,19 @@
             {% endfor %}
             
             <input type="hidden" name="filename" value="{{ filename }}">
-            <button type="submit" class="btn btn-success mt-3">Apply Methods</button>
+            <button type="submit" class="btn btn-success mt-3" onclick="showLoadingScreen()">Apply Methods</button>
         </form>
+    </div>
+</div>
+
+<!-- Loading Screen -->
+<div id="loading-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(255,255,255,0.9); z-index:1000; text-align:center;">
+    <div style="position:relative; top:50%; transform:translateY(-50%);">
+        <h2>Applying Methods...</h2>
+        <p id="selected-methods"></p>
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
     </div>
 </div>
 
@@ -71,5 +78,41 @@
             generalizationInput.style.display = 'none';
         }
     }
+
+    function showLoadingScreen() {
+    var selectedMethods = [];
+    var selects = document.querySelectorAll('.method-select');
+
+    // Mapping of internal method names to user-friendly display names
+    var methodDisplayNames = {
+        'generalize': 'Generalization',
+        'sha256': 'Pseudonymization',
+        'swap': 'Swapping',
+        // Add more mappings as needed
+    };
+
+    selects.forEach(function(select) {
+        var columnName = select.name.split('_')[1];
+        var selectedMethod = select.value;
+        if (selectedMethod !== 'none') {
+            // Use the display name from the mapping
+            var displayName = methodDisplayNames[selectedMethod] || selectedMethod;
+            selectedMethods.push(`${columnName}: ${displayName}`);
+        }
+    });
+
+    document.getElementById('selected-methods').innerText = selectedMethods.join('\n');
+
+    // Show the loading screen
+    document.getElementById('loading-screen').style.display = 'block';
+
+    // Introduce a delay before submitting the form
+    setTimeout(function() {
+        document.getElementById('anonymize-form').submit();
+    }, 10000); // 10 seconds delay
+}
+
+
+
 </script>
 {% endblock %}

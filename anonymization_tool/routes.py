@@ -1,5 +1,6 @@
 # anonymization_tool/routes.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, current_app
+import time
 import os
 import pandas as pd
 import numpy as np
@@ -75,82 +76,121 @@ def upload_file():
 
 
 
+
+
 @main.route('/anonymize', methods=['POST'])
 def anonymize():
-    selected_methods = request.form.to_dict()
-    filename = request.form['filename']
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    file_ext = os.path.splitext(filename)[1].lower()
+    try:
+        selected_methods = request.form.to_dict()
+        filename = request.form['filename']
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file_ext = os.path.splitext(filename)[1].lower()
 
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    anonymized_sheets = {}
-    swap_mappings = {}
+        # Simulate a delay (for demonstration purposes)
+        time.sleep(5) 
 
-    if file_ext == '.xlsx':
-        xls = pd.ExcelFile(file_path)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        anonymized_sheets = {}
+        swap_mappings = {}
 
-        # First pass: Create swap mappings across all sheets for each column that needs swapping
-        for sheet_name in xls.sheet_names:
-            sheet_df = xls.parse(sheet_name)
-            for column in sheet_df.columns:
+        if file_ext == '.xlsx':
+            xls = pd.ExcelFile(upload_path)
+
+            # First pass: Create swap mappings across all sheets for each column that needs swapping
+            for sheet_name in xls.sheet_names:
+                sheet_df = xls.parse(sheet_name)
+                for column in sheet_df.columns:
+                    method = selected_methods.get(f'method_{column}')
+                    if method == 'swap' and column not in swap_mappings:
+                        # Collect all values across all sheets for this column
+                        all_values = pd.concat([xls.parse(sheet)[column].dropna() for sheet in xls.sheet_names if column in xls.parse(sheet).columns])
+                        swap_mappings[column] = create_consistent_swap_mapping(all_values)
+
+            # Second pass: Apply the swap mappings consistently across all sheets
+            for sheet_name in xls.sheet_names:
+                sheet_df = xls.parse(sheet_name)
+                for column in sheet_df.columns:
+                    method = selected_methods.get(f'method_{column}')
+                    if method == 'swap' and column in swap_mappings:
+                        sheet_df[column] = sheet_df[column].map(swap_mappings[column])
+
+                anonymized_sheets[sheet_name] = sheet_df
+
+            anonymized_filename = f'Anonymized_{timestamp}_{filename}'
+            anonymized_path = os.path.join(current_app.config['ANONYMIZED_FOLDER'], anonymized_filename)
+
+            with pd.ExcelWriter(anonymized_path) as writer:
+                for sheet_name, df in anonymized_sheets.items():
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            flash('Excel file anonymized successfully.', 'success')
+
+        elif file_ext == '.csv':
+            df = pd.read_csv(upload_path)
+
+            for column in df.columns:
                 method = selected_methods.get(f'method_{column}')
                 if method == 'swap' and column not in swap_mappings:
-                    # Collect all values across all sheets for this column
-                    all_values = pd.concat([xls.parse(sheet)[column].dropna() for sheet in xls.sheet_names if column in xls.parse(sheet).columns])
-                    swap_mappings[column] = create_consistent_swap_mapping(all_values)
+                    swap_mappings[column] = create_consistent_swap_mapping(df[column])
 
-        # Second pass: Apply the swap mappings consistently across all sheets
-        for sheet_name in xls.sheet_names:
-            sheet_df = xls.parse(sheet_name)
-            for column in sheet_df.columns:
-                method = selected_methods.get(f'method_{column}')
                 if method == 'swap' and column in swap_mappings:
-                    sheet_df[column] = sheet_df[column].map(swap_mappings[column])
+                    df[column] = df[column].map(swap_mappings[column])
 
-            anonymized_sheets[sheet_name] = sheet_df
+            anonymized_filename = f'Anonymized_{timestamp}_{filename}'
+            anonymized_path = os.path.join(current_app.config['ANONYMIZED_FOLDER'], anonymized_filename)
+            df.to_csv(anonymized_path, index=False)
 
-        anonymized_filename = f'Anonymized_{timestamp}_{filename}'
-        anonymized_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], anonymized_filename)
+            flash('CSV file anonymized successfully.', 'success')
 
-        with pd.ExcelWriter(anonymized_file_path) as writer:
-            for sheet_name, df in anonymized_sheets.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+        else:
+            flash('Unsupported file format. Please upload a .xlsx or .csv file.', 'danger')
+            return redirect(url_for('main.upload_file'))
 
-    elif file_ext == '.csv':
-        df = pd.read_csv(file_path)
+        # Create a log file with improved formatting
+        log_filename = f'log_{timestamp}_{filename}.txt'
+        log_path = os.path.join(current_app.config['LOG_FOLDER'], log_filename)
 
-        for column in df.columns:
-            method = selected_methods.get(f'method_{column}')
-            if method == 'swap' and column not in swap_mappings:
-                swap_mappings[column] = create_consistent_swap_mapping(df[column])
+        with open(log_path, 'w') as log_file:
+            log_file.write(f"Anonymization Log for file: {filename}\n")
+            log_file.write(f"Timestamp: {timestamp}\n\n")
+            log_file.write(f"Columns and Applied Methods:\n")
+            log_file.write(f"{'-'*40}\n")
 
-            if method == 'swap' and column in swap_mappings:
-                df[column] = df[column].map(swap_mappings[column])
+            for column, method in selected_methods.items():
+                display_method = None
+                if method == 'sha256':
+                    display_method = 'Pseudonymization'
+                elif method == 'swap':
+                    display_method = 'Swapping'
+                elif method == 'generalize':
+                    range_size = request.form.get(f'range_size_{column}', 10)
+                    display_method = f'Generalization (Range: {range_size})'
+                elif method == 'none':
+                    display_method = 'None'
 
-        anonymized_filename = f'Anonymized_{timestamp}_{filename}'
-        anonymized_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], anonymized_filename)
-        df.to_csv(anonymized_file_path, index=False)
+                log_file.write(f"{column:<15}: {display_method}\n")
 
-    log_filename = f'log_{timestamp}_{filename}.txt'
-    log_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], log_filename)
-    with open(log_file_path, 'w') as log_file:
-        log_file.write(f"Anonymization log for file: {filename}\n")
-        log_file.write(f"Timestamp: {timestamp}\n")
-        log_file.write(f"Methods applied:\n")
-        for column, method in selected_methods.items():
-            log_file.write(f"{column}: {method}\n")
+            log_file.write(f"\nOriginal Filename: {filename}\n")
 
-    return render_template('download.html', filename=anonymized_filename, log_filename=log_filename)
+        flash('Anonymization log created successfully.', 'success')
+
+        return render_template('download.html', filename=anonymized_filename, log_filename=log_filename)
+
+    except Exception as e:
+        flash(f'An error occurred during the anonymization process: {str(e)}', 'danger')
+        return redirect(url_for('main.upload_file'))
+
+
 
 
 
 
 @main.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    file_path = os.path.join(current_app.config['ANONYMIZED_FOLDER'], filename)
     return send_file(file_path, as_attachment=True)
 
 @main.route('/download_log/<log_filename>', methods=['GET'])
 def download_log_file(log_filename):
-    log_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], log_filename)
+    log_file_path = os.path.join(current_app.config['LOG_FOLDER'], log_filename)
     return send_file(log_file_path, as_attachment=True)
