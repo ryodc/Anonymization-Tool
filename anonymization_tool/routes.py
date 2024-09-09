@@ -12,9 +12,6 @@ from .utils import (
     pseudonymize_random_string,
     swap_column_values,
     generalize_to_range,
-    create_enhanced_swap_mapping,
-    create_custom_swap_mapping,
-    create_robust_swap_mapping,
     create_consistent_swap_mapping,
     apply_methods
 )
@@ -86,8 +83,7 @@ def anonymize():
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         file_ext = os.path.splitext(filename)[1].lower()
 
-        # Simulate a delay (for demonstration purposes)
-        time.sleep(5) 
+        time.sleep(2)  # Simulate a delay
 
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         anonymized_sheets = {}
@@ -106,12 +102,17 @@ def anonymize():
                         all_values = pd.concat([xls.parse(sheet)[column].dropna() for sheet in xls.sheet_names if column in xls.parse(sheet).columns])
                         swap_mappings[column] = create_consistent_swap_mapping(all_values)
 
-            # Second pass: Apply the swap mappings consistently across all sheets
+            # Second pass: Apply methods consistently across all sheets
             for sheet_name in xls.sheet_names:
                 sheet_df = xls.parse(sheet_name)
                 for column in sheet_df.columns:
                     method = selected_methods.get(f'method_{column}')
-                    if method == 'swap' and column in swap_mappings:
+                    if method == 'sha256':
+                        sheet_df[column] = sheet_df[column].apply(pseudonymize_sha256)
+                    elif method == 'generalize':
+                        range_size = int(request.form.get(f'range_size_{column}', 10))
+                        sheet_df[column] = sheet_df[column].apply(generalize_to_range, args=(range_size,))
+                    elif method == 'swap' and column in swap_mappings:
                         sheet_df[column] = sheet_df[column].map(swap_mappings[column])
 
                 anonymized_sheets[sheet_name] = sheet_df
@@ -128,12 +129,23 @@ def anonymize():
         elif file_ext == '.csv':
             df = pd.read_csv(upload_path)
 
+            # Create swap mappings for CSV columns that require swapping
             for column in df.columns:
                 method = selected_methods.get(f'method_{column}')
                 if method == 'swap' and column not in swap_mappings:
-                    swap_mappings[column] = create_consistent_swap_mapping(df[column])
+                    # Collect all unique values for this column
+                    all_values = df[column].dropna()
+                    swap_mappings[column] = create_consistent_swap_mapping(all_values)
 
-                if method == 'swap' and column in swap_mappings:
+            # Apply methods for each column
+            for column in df.columns:
+                method = selected_methods.get(f'method_{column}')
+                if method == 'sha256':
+                    df[column] = df[column].apply(pseudonymize_sha256)
+                elif method == 'generalize':
+                    range_size = int(request.form.get(f'range_size_{column}', 10))
+                    df[column] = df[column].apply(generalize_to_range, args=(range_size,))
+                elif method == 'swap' and column in swap_mappings:
                     df[column] = df[column].map(swap_mappings[column])
 
             anonymized_filename = f'Anonymized_{timestamp}_{filename}'
@@ -179,7 +191,6 @@ def anonymize():
     except Exception as e:
         flash(f'An error occurred during the anonymization process: {str(e)}', 'danger')
         return redirect(url_for('main.upload_file'))
-
 
 
 

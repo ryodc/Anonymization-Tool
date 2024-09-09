@@ -37,59 +37,7 @@ def create_swap_mapping(values):
     
     return dict(zip(unique_values, shuffled_values))
 
-def create_enhanced_swap_mapping(column_values):
-    """Creates a swap mapping that better randomizes repeated sequences."""
-    # Get the unique values and shuffle them
-    unique_values = column_values.dropna().unique()
-    shuffled_values = np.random.permutation(unique_values)
-    
-    # Create a mapping from the original values to the shuffled ones
-    mapping = dict(zip(unique_values, shuffled_values))
-    
-    # Apply the mapping, but ensure that adjacent identical values in the original list
-    # do not result in adjacent identical values in the swapped list
-    result = []
-    for value in column_values:
-        if not result or result[-1] != mapping[value]:
-            result.append(mapping[value])
-        else:
-            # Find a different value to swap in to break up the pattern
-            alternatives = [v for v in shuffled_values if v != result[-1]]
-            alternative_value = random.choice(alternatives)
-            result.append(alternative_value)
-            # Update the mapping to ensure consistency
-            mapping[value] = alternative_value
-    
-    return dict(zip(column_values, result))
 
-def create_custom_swap_mapping(column_values):
-    """Creates a swap mapping that better handles repeated sequences."""
-    original_values = column_values.dropna().tolist()  # Convert to a list for easier manipulation
-    shuffled_values = original_values.copy()
-    
-    # Shuffle the list until no value is in its original place and no block patterns exist
-    np.random.shuffle(shuffled_values)
-    while any(o == s for o, s in zip(original_values, shuffled_values)):
-        np.random.shuffle(shuffled_values)
-    
-    return dict(zip(original_values, shuffled_values))
-
-def create_robust_swap_mapping(column_values):
-    """Creates a swap mapping that explicitly avoids placing repeated values in a similar sequence."""
-    original_values = column_values.dropna().tolist()
-    
-    # Shuffle until we don't have any blocks of repeated patterns
-    shuffled_values = original_values.copy()
-    max_attempts = 1000  # Maximum attempts to find a good shuffle
-    attempts = 0
-
-    while attempts < max_attempts:
-        random.shuffle(shuffled_values)
-        if not any(o == s for o, s in zip(original_values, shuffled_values)):
-            break
-        attempts += 1
-    
-    return dict(zip(original_values, shuffled_values))
 
 def create_consistent_swap_mapping(column_values):
     """Creates a consistent swap mapping ensuring no value is lost or duplicated."""

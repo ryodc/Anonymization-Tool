@@ -3,68 +3,97 @@
 {% block title %}Select Columns - Pseudonymization App{% endblock %}
 
 {% block content %}
-<div class="card mt-4">
-    <div class="card-header">
-        <h3>Select Columns and Methods</h3>
-    </div>
-    <div class="card-body">
-        <!-- Go Back Button -->
-        <a href="{{ url_for('main.upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload a Different File</a>
-        
-        <form id="anonymize-form" method="POST" action="{{ url_for('main.anonymize') }}">
-            <div class="form-group">
-                <label>Select method for multiple columns:</label>
-                <select class="form-control" id="batch-method">
-                    <option value="none">None</option>
-                    <option value="generalize">Generalize</option>
-                    <option value="sha256">Pseudonymization</option>
-                    <option value="swap">Swapping</option>
-                </select>
-                <button type="button" class="btn btn-primary mt-2" onclick="applyBatchMethod()">Apply Method to All</button>
-            </div>
+<div class="bento-grid mt-4">
+    <div class="bento-item">
+        <div class="card-header">
+            <h3>Select Columns and Methods</h3>
+        </div>
+        <div class="card-body">
+            <!-- Go Back Button -->
+            <a href="{{ url_for('main.upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload a Different File</a>
             
-            {% for column in columns %}
+            <form id="anonymize-form" method="POST" action="{{ url_for('main.anonymize') }}">
                 <div class="form-group">
-                    <label>{{ column }}</label>
-                    <select class="form-control method-select" name="method_{{ column }}" onchange="toggleGeneralizationInput('{{ column }}')" required>
+                    <label>Select method for multiple columns:</label>
+                    <select class="form-control" id="batch-method">
                         <option value="none">None</option>
                         <option value="generalize">Generalize</option>
                         <option value="sha256">Pseudonymization</option>
                         <option value="swap">Swapping</option>
                     </select>
-
-                    <!-- Generalization input (hidden by default) -->
-                    <div class="form-group mt-2" id="generalization_input_{{ column }}" style="display: none;">
-                        <label for="range_size_{{ column }}">Generalization Range Size:</label>
-                        <input type="number" class="form-control" id="range_size_{{ column }}" name="range_size_{{ column }}" value="10">
-                    </div>
+                    <button type="button" class="btn btn-primary mt-2" onclick="applyBatchMethod()">Apply Method to All</button>
                 </div>
-            {% endfor %}
-            
-            <input type="hidden" name="filename" value="{{ filename }}">
-            <button type="submit" class="btn btn-success mt-3" onclick="showLoadingScreen()">Apply Methods</button>
-        </form>
+                
+                {% for column in columns %}
+                    <div class="form-group d-flex align-items-center">
+                        <label class="mr-3" style="min-width: 150px;">{{ column }}</label>
+                        <select class="form-control method-select mr-3" name="method_{{ column }}" onchange="toggleGeneralizationInput('{{ column }}')" required style="flex-grow: 1;">
+                            <option value="none">None</option>
+                            <option value="generalize">Generalize</option>
+                            <option value="sha256">Pseudonymization</option>
+                            <option value="swap">Swapping</option>
+                        </select>
+
+                        <!-- Generalization input (hidden by default) -->
+                        <div class="ml-3" id="generalization_input_{{ column }}" style="display: none;">
+                            <input type="number" class="form-control" id="range_size_{{ column }}" name="range_size_{{ column }}" value="10" placeholder="Range Size" style="width: 120px;">
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <input type="hidden" name="filename" value="{{ filename }}">
+                <button type="submit" class="btn btn-success mt-3" onclick="showLoadingScreen()">Apply Methods</button>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Loading Screen -->
 <div id="loading-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(255,255,255,0.9); z-index:1000; text-align:center;">
-    <div style="position:relative; top:50%; transform:translateY(-50%);">
+    <div style="position:relative; top:30%; transform:translateY(-50%); max-width: 600px; margin: 0 auto;">
         <h2>Applying Methods...</h2>
-        <p id="selected-methods"></p>
-        <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
-        </div>
+        <ul id="selected-methods" style="list-style-type: none; padding-left: 0; text-align: left;">
+            <!-- Dynamically add selected methods here -->
+        </ul>
     </div>
 </div>
 
+<style>
+    .loading-sheet {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 18px;
+        padding: 5px 0;
+    }
+
+    .loading-sheet.completed {
+        color: green;
+    }
+
+    .checkmark {
+        display: none;
+        color: green;
+    }
+
+    .checkmark.completed {
+        display: inline;
+    }
+
+    #loading-screen {
+        overflow-y: auto;
+    }
+</style>
+
+{% block scripts %}
 <script>
     function applyBatchMethod() {
         var selectedMethod = document.getElementById('batch-method').value;
         var selects = document.querySelectorAll('.method-select');
+
         selects.forEach(function(select) {
             select.value = selectedMethod;
-            toggleGeneralizationInput(select.name.split('_')[1]); // Pass the column name to toggle the input
+            toggleGeneralizationInput(select.name.split('_')[1]);
         });
     }
 
@@ -72,47 +101,75 @@
         var methodSelect = document.querySelector(`select[name="method_${column}"]`);
         var generalizationInput = document.getElementById(`generalization_input_${column}`);
 
-        if (methodSelect.value === 'generalize') {
-            generalizationInput.style.display = 'block';
-        } else {
-            generalizationInput.style.display = 'none';
+        if (methodSelect && generalizationInput) {
+            if (methodSelect.value === 'generalize') {
+                generalizationInput.style.display = 'inline-block'; // Show inline to appear next to the dropdown
+            } else {
+                generalizationInput.style.display = 'none';
+            }
         }
     }
 
     function showLoadingScreen() {
-    var selectedMethods = [];
-    var selects = document.querySelectorAll('.method-select');
+        var selectedMethods = [];
+        var selects = document.querySelectorAll('.method-select');
+        var sheetsList = document.getElementById('selected-methods');
 
-    // Mapping of internal method names to user-friendly display names
-    var methodDisplayNames = {
-        'generalize': 'Generalization',
-        'sha256': 'Pseudonymization',
-        'swap': 'Swapping',
-        // Add more mappings as needed
-    };
+        // Mapping of internal method names to user-friendly display names
+        var methodDisplayNames = {
+            'generalize': 'Generalization',
+            'sha256': 'Pseudonymization',
+            'swap': 'Swapping',
+        };
 
-    selects.forEach(function(select) {
-        var columnName = select.name.split('_')[1];
-        var selectedMethod = select.value;
-        if (selectedMethod !== 'none') {
-            // Use the display name from the mapping
-            var displayName = methodDisplayNames[selectedMethod] || selectedMethod;
-            selectedMethods.push(`${columnName}: ${displayName}`);
+        // Clear previous method list
+        sheetsList.innerHTML = '';
+
+        // Create list elements for each column and its selected method
+        selects.forEach(function(select) {
+            var columnName = select.name.split('_')[1];
+            var selectedMethod = select.value;
+            if (selectedMethod !== 'none') {
+                // Use the display name from the mapping
+                var displayName = methodDisplayNames[selectedMethod] || selectedMethod;
+                selectedMethods.push(`${columnName}: ${displayName}`);
+
+                // Add the column and method to the list with a checkmark
+                var li = document.createElement('li');
+                li.classList.add('loading-sheet');
+                li.innerHTML = `${columnName}: ${displayName} <span class="checkmark">&#10003;</span>`;
+                sheetsList.appendChild(li);
+            }
+        });
+
+        // Show the loading screen
+        document.getElementById('loading-screen').style.display = 'block';
+
+        // Animate checkmarks one by one
+        markCompleteAndSubmit();
+    }
+
+    // Function to handle checkmark animations
+    function markCompleteAndSubmit() {
+        const loadingItems = document.querySelectorAll('.loading-sheet');
+        let i = 0;
+
+        function showNext() {
+            if (i < loadingItems.length) {
+                const currentItem = loadingItems[i];
+                currentItem.classList.add('completed');
+                currentItem.querySelector('.checkmark').classList.add('completed');
+                i++;
+                setTimeout(showNext, 1000);  // Show next item after 1 second
+            } else {
+                setTimeout(function() {
+                    document.getElementById('anonymize-form').submit();
+                }, 1000);  // Delay before submitting the form
+            }
         }
-    });
 
-    document.getElementById('selected-methods').innerText = selectedMethods.join('\n');
-
-    // Show the loading screen
-    document.getElementById('loading-screen').style.display = 'block';
-
-    // Introduce a delay before submitting the form
-    setTimeout(function() {
-        document.getElementById('anonymize-form').submit();
-    }, 10000); // 10 seconds delay
-}
-
-
-
+        showNext();  // Start showing each column and method one by one
+    }
 </script>
+{% endblock %}
 {% endblock %}
