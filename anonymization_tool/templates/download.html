@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Download - Pseudonymization App{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg p-4" style="width: 100%; max-width: 600px;">
+        <div class="card-header bg-primary text-white rounded-top">
+            <h3>🎉 Download Your Files</h3>
+        </div>
+        <div class="card-body text-center">
+            <p>Your file has been successfully anonymized. You can download it below:</p>
+            <div class="d-flex flex-column align-items-center">
+                <a href="{{ url_for('main.download_file', filename=filename) }}" class="btn btn-success btn-lg mb-3 w-100">Download File</a>
+                <a href="{{ url_for('main.download_log_file', log_filename=log_filename) }}" class="btn btn-info btn-lg mb-3 w-100">Download Log File</a>
+                <a href="{{ url_for('main.home') }}" class="btn btn-danger btn-lg w-100">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
