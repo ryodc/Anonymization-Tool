@@ -5,12 +5,12 @@
 {% block content %}
 <div class="bento-grid mt-4">
     <div class="bento-item">
-        <div class="card-header">
+        <div class="card-header sogeti-blue">
             <h3>Select Columns and Methods</h3>
         </div>
         <div class="card-body">
             <!-- Go Back Button -->
-            <a href="{{ url_for('main.upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload a Different File</a>
+            <a href="{{ url_for('main.upload_file') }}" class="btn btn-secondary mb-3">Go Back to Upload Different Files</a>
             
             <form id="anonymize-form" method="POST" action="{{ url_for('main.anonymize') }}">
                 <div class="form-group">
@@ -23,6 +23,9 @@
                     </select>
                     <button type="button" class="btn btn-primary mt-2" onclick="applyBatchMethod()">Apply Method to All</button>
                 </div>
+
+                <!-- Updated to reflect multiple files -->
+                <h5>Columns from Uploaded Files:</h5>
                 
                 {% for column in columns %}
                     <div class="form-group d-flex align-items-center">
@@ -41,7 +44,11 @@
                     </div>
                 {% endfor %}
                 
-                <input type="hidden" name="filename" value="{{ filename }}">
+                <!-- Include filenames as hidden inputs -->
+                {% for file in filenames %}
+                    <input type="hidden" name="filenames" value="{{ file }}">
+                {% endfor %}
+                
                 <button type="submit" class="btn btn-success mt-3" onclick="showLoadingScreen()">Apply Methods</button>
             </form>
         </div>
@@ -55,10 +62,16 @@
         <ul id="selected-methods" style="list-style-type: none; padding-left: 0; text-align: left;">
             <!-- Dynamically add selected methods here -->
         </ul>
+        <!-- "Next Step" button to move forward after processing is done -->
+        <button id="next-page-button" class="btn btn-success mt-3" style="display:none;" onclick="goToNextPage()">Next Step</button>
     </div>
 </div>
 
 <style>
+    .sogeti-blue {
+        background-color: #0070ad;
+    }
+
     .loading-sheet {
         display: flex;
         justify-content: space-between;
@@ -110,7 +123,10 @@
         }
     }
 
-    function showLoadingScreen() {
+    function showLoadingScreen(event) {
+        // Prevent the form from submitting immediately
+        event.preventDefault();
+
         var selectedMethods = [];
         var selects = document.querySelectorAll('.method-select');
         var sheetsList = document.getElementById('selected-methods');
@@ -145,7 +161,7 @@
         // Show the loading screen
         document.getElementById('loading-screen').style.display = 'block';
 
-        // Animate checkmarks one by one
+        // Start checkmark animations and delay the form submission
         markCompleteAndSubmit();
     }
 
@@ -160,16 +176,27 @@
                 currentItem.classList.add('completed');
                 currentItem.querySelector('.checkmark').classList.add('completed');
                 i++;
+
+                // Increase this delay to make each checkmark appear slower
                 setTimeout(showNext, 1000);  // Show next item after 1 second
             } else {
-                setTimeout(function() {
-                    document.getElementById('anonymize-form').submit();
-                }, 1000);  // Delay before submitting the form
+                // After all methods have been processed, show the "Next Step" button
+                document.getElementById('next-page-button').style.display = 'block';
             }
         }
 
-        showNext();  // Start showing each column and method one by one
+        // Begin the animation
+        showNext();
     }
+
+    // Function to go to the next step (submitting the form)
+    function goToNextPage() {
+        document.getElementById('anonymize-form').submit();  // Submit the form and move to the next page
+    }
+
+    // Attach the loading screen handler to the form submit event
+    document.getElementById('anonymize-form').addEventListener('submit', showLoadingScreen);
 </script>
+
 {% endblock %}
 {% endblock %}
